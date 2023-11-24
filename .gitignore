@@ -1,3 +1,6 @@
+*.pub
+*.pem
+
 # Local .terraform directories
 **/.terraform/*
 

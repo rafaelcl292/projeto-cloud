@@ -15,12 +15,10 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
-# module "RDS" {
-#   source          = "./modules/RDS"
-#   db_password     = var.db_password
-#   vpc_id          = aws_vpc.vpc.id
-#   cidr_blocks_ec2 = module.EC2.cidr_blocks_ec2
-# }
+module "RDS" {
+  source          = "./modules/RDS"
+  vpc_id          = aws_vpc.vpc.id
+}
 
 module "LB" {
   source = "./modules/LB"

@@ -21,6 +21,11 @@ resource "aws_subnet" "subnet2_db" {
 resource "aws_route_table" "route_table_db" {
   vpc_id = var.vpc_id
 
+  #route {
+  #  cidr_block     = "0.0.0.0/0"
+  #  nat_gateway_id = var.nat_gateway_id
+  #}
+
   tags = {
     Name = "Private Route Table"
   }
@@ -45,7 +50,7 @@ resource "aws_security_group" "db_sg" {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = var.cidr_blocks_ec2
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -71,14 +76,14 @@ resource "aws_db_instance" "db" {
   instance_class       = "db.t3.micro"
   db_name              = "groceries_db"
   username             = "postgres"
-  password             = var.db_password
+  password             = "12qwaszx"
   db_subnet_group_name = aws_db_subnet_group.db_subnet_group.name
   skip_final_snapshot  = true
 
   backup_retention_period = 7
   backup_window           = "02:00-02:30"
   maintenance_window      = "Mon:03:00-Mon:04:00"
-  multi_az                = true
+  # multi_az                = true
 
   vpc_security_group_ids = [
     aws_security_group.db_sg.id,

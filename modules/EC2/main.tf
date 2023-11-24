@@ -34,6 +34,9 @@ resource "aws_route_table" "route_table_ec2" {
     gateway_id = var.igw.id
   }
 
+  # RDS
+
+
   tags = {
     Name = "Public Route Table"
   }
