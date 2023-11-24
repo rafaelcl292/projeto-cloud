@@ -2,9 +2,10 @@ output "alb_target_group_arn" {
   value = aws_lb_target_group.target_group.arn
 }
 
-output "lb_subnet_ids" {
-  value = [
-    aws_subnet.subnet1_app.id,
-    aws_subnet.subnet2_app.id
-  ]
+output "load_balancer_dns" {
+  value = aws_lb.lb.dns_name
+}
+
+output "alb_sg_id" {
+  value = aws_security_group.lb_sg.id
 }

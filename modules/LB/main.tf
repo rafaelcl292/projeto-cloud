@@ -1,21 +1,46 @@
-resource "aws_subnet" "subnet1_app" {
-  vpc_id            = var.vpc_id
-  cidr_block        = "10.0.3.0/24"
-  availability_zone = "us-west-2a"
+resource "aws_subnet" "subnet1_lb" {
+  vpc_id                  = var.vpc_id
+  cidr_block              = "10.0.3.0/24"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
 
   tags = {
     Name = "lb_subnet"
   }
 }
 
-resource "aws_subnet" "subnet2_app" {
-  vpc_id            = var.vpc_id
-  cidr_block        = "10.0.4.0/24"
-  availability_zone = "us-west-2b"
+resource "aws_subnet" "subnet2_lb" {
+  vpc_id                  = var.vpc_id
+  cidr_block              = "10.0.4.0/24"
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = true
 
   tags = {
     Name = "lb_subnet"
   }
+}
+
+resource "aws_route_table" "route_table_lb" {
+  vpc_id = var.vpc_id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = var.igw.id
+  }
+
+  tags = {
+    Name = "Public Route Table"
+  }
+}
+
+resource "aws_route_table_association" "public_subnet1_lb" {
+  subnet_id      = aws_subnet.subnet1_lb.id
+  route_table_id = aws_route_table.route_table_lb.id
+}
+
+resource "aws_route_table_association" "public_subnet2_lb" {
+  subnet_id      = aws_subnet.subnet2_lb.id
+  route_table_id = aws_route_table.route_table_lb.id
 }
 
 resource "aws_lb_target_group" "target_group" {
@@ -25,12 +50,12 @@ resource "aws_lb_target_group" "target_group" {
   vpc_id   = var.vpc_id
 
   health_check {
-    healthy_threshold   = 5
+    healthy_threshold   = 2
     unhealthy_threshold = 2
     timeout             = 5
     interval            = 10
     path                = "/"
-    port                = "traffic-port"
+    port                = 80
     protocol            = "HTTP"
   }
 }
@@ -40,9 +65,18 @@ resource "aws_security_group" "lb_sg" {
   description = "Load Balancer security group"
   vpc_id      = var.vpc_id
 
+  # http
   ingress {
     from_port   = 80
     to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # https
+  ingress {
+    from_port   = 443
+    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -62,8 +96,8 @@ resource "aws_lb" "lb" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.lb_sg.id]
   subnets = [
-    aws_subnet.subnet1_app.id,
-    aws_subnet.subnet2_app.id,
+    aws_subnet.subnet1_lb.id,
+    aws_subnet.subnet2_lb.id,
   ]
   depends_on = [
     var.igw
@@ -84,4 +118,3 @@ resource "aws_lb_listener" "listener" {
     type             = "forward"
   }
 }
-

@@ -1,4 +1,16 @@
-variable "lb_subnet_ids" {
-  type        = list(string)
-  description = "List of subnet IDs for the load balancer"
+variable "vpc_id" {
+  type        = string
+  description = "VPC ID"
+}
+
+variable "lb_target_group_arn" {
+  description = "Target Group ARN"
+}
+
+variable "lb_sg" {
+  description = "Security Group for the Load Balancer"
+}
+
+variable "igw" {
+  description = "Internet Gateway"
 }

@@ -1,7 +1,7 @@
 resource "aws_subnet" "subnet1_db" {
   vpc_id            = var.vpc_id
   cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-west-2a"
+  availability_zone = "us-east-1a"
 
   tags = {
     Name = "rds_subnet"
@@ -11,11 +11,29 @@ resource "aws_subnet" "subnet1_db" {
 resource "aws_subnet" "subnet2_db" {
   vpc_id            = var.vpc_id
   cidr_block        = "10.0.2.0/24"
-  availability_zone = "us-west-2b"
+  availability_zone = "us-east-1b"
 
   tags = {
     Name = "rds_subnet"
   }
+}
+
+resource "aws_route_table" "route_table_db" {
+  vpc_id = var.vpc_id
+
+  tags = {
+    Name = "Private Route Table"
+  }
+}
+
+resource "aws_route_table_association" "private_subnet1_db" {
+  subnet_id      = aws_subnet.subnet1_db.id
+  route_table_id = aws_route_table.route_table_db.id
+}
+
+resource "aws_route_table_association" "private_subnet2_db" {
+  subnet_id      = aws_subnet.subnet2_db.id
+  route_table_id = aws_route_table.route_table_db.id
 }
 
 resource "aws_security_group" "db_sg" {
@@ -24,14 +42,10 @@ resource "aws_security_group" "db_sg" {
   vpc_id      = var.vpc_id
 
   ingress {
-    from_port = 5432
-    to_port   = 5432
-    protocol  = "tcp"
-    cidr_blocks = [
-      # mudar para o da aplicacao
-      aws_subnet.subnet1_db.cidr_block,
-      aws_subnet.subnet2_db.cidr_block,
-    ]
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = var.cidr_blocks_ec2
   }
 
   egress {
