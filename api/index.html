@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grocery List</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-gray-100 p-8">
+    <h2 class="text-3xl font-bold mb-4">Grocery List</h2>
+
+    <form id="groceryForm" class="flex mb-4">
+        <div class="mr-2">
+            <label for="name" class="block text-sm font-medium text-gray-600">Name:</label>
+            <input type="text" id="name" class="mt-1 p-2 border rounded-md" required />
+        </div>
+
+        <div class="mr-2">
+            <label for="price" class="block text-sm font-medium text-gray-600">Price:</label>
+            <input type="number" id="price" step="0.01" class="mt-1 p-2 border rounded-md" required />
+        </div>
+
+        <div class="mr-2">
+            <label for="quantity" class="block text-sm font-medium text-gray-600">Quantity:</label>
+            <input type="number" id="quantity" class="mt-1 p-2 border rounded-md" required />
+        </div>
+
+        <button type="button" id="addGroceryButton" onclick="checkFormValidity()"
+            class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md">
+            Add Grocery
+        </button>
+    </form>
+
+    <h3 class="text-xl font-bold mb-2">Current Groceries</h3>
+    <ul id="groceryList" class="list-disc pl-4"></ul>
+
+    <script>
+        function checkFormValidity() {
+            const name = document.getElementById("name").value;
+            const price = document.getElementById("price").value;
+            const quantity = document.getElementById("quantity").value;
+
+            if (name && price && quantity) {
+                // Call the addGrocery function without an ID (for adding)
+                addGrocery();
+            } else {
+                alert("Please fill in all fields before adding the grocery.");
+            }
+        }
+
+        // Modify the addGrocery function to handle both adding and updating
+        function addGrocery(id) {
+            const name = document.getElementById("name").value;
+            const price = parseFloat(document.getElementById("price").value);
+            const quantity = parseInt(document.getElementById("quantity").value);
+
+            // Set the API URL based on whether an ID is provided
+            const apiUrl = id
+                ? `http://localhost:8000/grocery/${id}`
+                : "http://localhost:8000/grocery";
+
+            // Set the HTTP method based on whether an ID is provided
+            const method = id ? "PUT" : "POST";
+
+            fetch(apiUrl, {
+                method,
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({name, price, quantity}),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    console.log("Success:", data);
+                    // Refresh the grocery list after adding or updating an item
+                    fetchGroceries();
+                    document.getElementById("groceryForm").reset();
+                    // Reset button text to "Add Grocery" after submitting the form
+                    document.getElementById("addGroceryButton").textContent =
+                        "Add Grocery";
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+        }
+
+        function fetchGroceries() {
+            const url = "http://localhost:8000/groceries";
+
+            fetch(url)
+                .then((response) => response.json())
+                .then((data) => {
+                    displayGroceries(data);
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+        }
+
+        function displayGroceries(groceries) {
+            const groceryList = document.getElementById("groceryList");
+            groceryList.innerHTML = "";
+            if (!groceries) {
+                return;
+            }
+            // order groceries by name
+            groceries.sort((a, b) => a.name.localeCompare(b.name));
+            groceries.forEach((grocery) => {
+                const listItem = document.createElement("li");
+                listItem.classList.add(
+                    "flex",
+                    "items-center",
+                    "justify-between",
+                    "mb-2",
+                    "p-2",
+                    "rounded",
+                );
+
+                const itemName = document.createElement("span");
+                itemName.classList.add("font-bold");
+                itemName.textContent = `${grocery.name}`;
+
+                const itemDetails = document.createElement("span");
+                itemDetails.textContent = `$${grocery.price} - Qty: ${grocery.quantity}`;
+
+                listItem.appendChild(itemName);
+                listItem.appendChild(itemDetails);
+
+                // Create delete button
+                const deleteButton = document.createElement("button");
+                deleteButton.classList.add(
+                    "bg-red-500",
+                    "text-white",
+                    "px-2",
+                    "py-1.5",
+                    "mr-1",
+                    "rounded",
+                );
+                deleteButton.textContent = "Delete";
+                deleteButton.addEventListener("click", () =>
+                    deleteGrocery(grocery.id),
+                );
+
+                // Create update button
+                const updateButton = document.createElement("button");
+                updateButton.classList.add(
+                    "bg-blue-500",
+                    "text-white",
+                    "px-2",
+                    "py-1.5",
+                    "rounded",
+                );
+                updateButton.textContent = "Update";
+                updateButton.addEventListener("click", () =>
+                    updateGroceryForm(grocery),
+                );
+
+                // Create a container div for buttons and align to the right
+                const buttonsContainer = document.createElement("div");
+                buttonsContainer.classList.add("flex", "items-center");
+                buttonsContainer.appendChild(deleteButton);
+                buttonsContainer.appendChild(updateButton);
+
+                // Append buttons container to the list item
+                listItem.appendChild(buttonsContainer);
+
+                // Set max-width to reduce the width occupied by each item
+                listItem.style.maxWidth = "400px"; // Adjust the value based on your preference
+
+                // Append list item to the grocery list
+                groceryList.appendChild(listItem);
+            });
+        }
+
+        function updateGroceryForm(grocery) {
+            document.getElementById("name").value = grocery.name;
+            document.getElementById("price").value = grocery.price;
+            document.getElementById("quantity").value = grocery.quantity;
+
+            // Change the button text to "Update Grocery"
+            document.getElementById("addGroceryButton").textContent =
+                "Update Grocery";
+
+            // Change the button click event to call addGrocery function with the ID
+            document.getElementById("addGroceryButton").onclick = () =>
+                addGrocery(grocery.id);
+        }
+
+        function deleteGrocery(id) {
+            const apiUrl = `http://localhost:8000/grocery/${id}`;
+
+            fetch(apiUrl, {
+                method: "DELETE",
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    console.log("Deleted:", data);
+                    // Refresh the grocery list after deleting an item
+                    fetchGroceries();
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                });
+        }
+
+        // Fetch initial groceries on page load
+        fetchGroceries();
+    </script>
+</body>
+
+</html>
