@@ -1,7 +1,7 @@
 resource "aws_subnet" "subnet1_ec2" {
-  vpc_id            = var.vpc_id
-  cidr_block        = "10.0.5.0/24"
-  availability_zone = "us-east-1a"
+  vpc_id                  = var.vpc_id
+  cidr_block              = "10.0.5.0/24"
+  availability_zone       = "us-east-1a"
   map_public_ip_on_launch = true
 
   tags = {
@@ -9,33 +9,13 @@ resource "aws_subnet" "subnet1_ec2" {
   }
 }
 
-#resource "aws_eip" "eip_ec2" {
-#  vpc = true
-#
-#  depends_on = [
-#    var.igw
-#  ]
-#}
-
-#resource "aws_nat_gateway" "nat_gateway_ec2" {
-#  allocation_id = aws_eip.eip_ec2.id
-#  subnet_id     = aws_subnet.subnet1_ec2.id
-#
-#  depends_on = [
-#    var.igw
-#  ]
-#}
-
 resource "aws_route_table" "route_table_ec2" {
   vpc_id = var.vpc_id
 
   route {
-    cidr_block     = "0.0.0.0/0"
+    cidr_block = "0.0.0.0/0"
     gateway_id = var.igw.id
   }
-
-  # RDS
-
 
   tags = {
     Name = "Public Route Table"
@@ -48,18 +28,19 @@ resource "aws_route_table_association" "subnet1_ec2" {
 }
 
 resource "aws_launch_template" "launch_template" {
-  name                   = "launch_template_ec2"
-  image_id               = "ami-0fc5d935ebf8bc3bc"
-  instance_type          = "t2.micro"
-  #vpc_security_group_ids = [aws_security_group.sg_ec2.id]
-  key_name               = aws_key_pair.key_ec2.key_name
+  name          = "launch_template_ec2"
+  image_id      = "ami-0fc5d935ebf8bc3bc"
+  instance_type = "t2.micro"
+  key_name      = aws_key_pair.key_ec2.key_name
   user_data = base64encode(<<-EOF
     #!/bin/bash
     sudo apt update
     sudo apt-get install -y apache2
     sudo systemctl enable apache2
+    wget https://raw.githubusercontent.com/rafaelcl292/projeto-cloud/main/api/index.html
+    sed 's/localhost/${aws_instance.api.public_ip}/g' index.html > index_new.html
+    sudo mv index_new.html /var/www/html/index.html
     sudo systemctl start apache2
-    sudo apt-get install ec2-instance-connect
     EOF
   )
 
@@ -67,6 +48,13 @@ resource "aws_launch_template" "launch_template" {
     associate_public_ip_address = true
     security_groups             = [aws_security_group.sg_ec2.id]
     subnet_id                   = aws_subnet.subnet1_ec2.id
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+    tags = {
+      Name = "ec2"
+    }
   }
 }
 
@@ -166,4 +154,62 @@ resource "aws_autoscaling_policy" "policy_ec2_scale_down" {
   adjustment_type        = "ChangeInCapacity"
   cooldown               = 300
   autoscaling_group_name = aws_autoscaling_group.asg_ec2.name
+}
+
+# api
+resource "aws_security_group" "sg_api" {
+  name   = "sg_api"
+  vpc_id = var.vpc_id
+
+  # http
+    ingress {
+    from_port = 80
+    to_port   = 80
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    from_port = 8000
+    to_port   = 8000
+    protocol  = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  # ssh
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "api" {
+  ami                    = "ami-0fc5d935ebf8bc3bc"
+  instance_type          = "t2.micro"
+  key_name               = aws_key_pair.key_ec2.key_name
+  subnet_id              = aws_subnet.subnet1_ec2.id
+  vpc_security_group_ids = [aws_security_group.sg_api.id]
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    wget https://raw.githubusercontent.com/rafaelcl292/projeto-cloud/main/api/main
+    chmod +x main
+    export DB_PASSWORD=${var.db_password}
+    export DB_HOST=${var.db_host}
+    export DB_PORT=${var.db_port}
+    export DB_NAME=${var.db_name}
+    export DB_USER=${var.db_user}
+    ./main
+    EOF
+  )
+
+  tags = {
+    Name = "api"
+  }
 }

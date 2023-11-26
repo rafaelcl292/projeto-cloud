@@ -15,11 +15,6 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
-module "RDS" {
-  source          = "./modules/RDS"
-  vpc_id          = aws_vpc.vpc.id
-}
-
 module "LB" {
   source = "./modules/LB"
   vpc_id = aws_vpc.vpc.id
@@ -32,6 +27,16 @@ module "EC2" {
   lb_target_group_arn = module.LB.alb_target_group_arn
   lb_sg               = module.LB.alb_sg_id
   igw                 = aws_internet_gateway.igw
+  db_password         = module.RDS.db_password
+  db_host             = module.RDS.db_host
+  db_port             = module.RDS.db_port
+  db_name             = module.RDS.db_name
+  db_user             = module.RDS.db_user
+}
+
+module "RDS" {
+  source          = "./modules/RDS"
+  vpc_id          = aws_vpc.vpc.id
 }
 
 resource "aws_autoscaling_attachment" "asg_attachment" {
