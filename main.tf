@@ -37,6 +37,7 @@ module "EC2" {
 module "RDS" {
   source          = "./modules/RDS"
   vpc_id          = aws_vpc.vpc.id
+  api_sg_id       = module.EC2.api_sg_id
 }
 
 resource "aws_autoscaling_attachment" "asg_attachment" {

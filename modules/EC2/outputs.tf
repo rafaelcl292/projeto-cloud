@@ -1,5 +1,5 @@
 output "ec2_asg_arn" {
- value = aws_autoscaling_group.asg_ec2.arn
+  value = aws_autoscaling_group.asg_ec2.arn
 }
 
 output "asg_name" {
@@ -8,4 +8,8 @@ output "asg_name" {
 
 output "subnet_ec2_id" {
   value = aws_subnet.subnet1_ec2.id
+}
+
+output "api_sg_id" {
+  value = aws_security_group.sg_api.id
 }

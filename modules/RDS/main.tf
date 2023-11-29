@@ -21,11 +21,6 @@ resource "aws_subnet" "subnet2_db" {
 resource "aws_route_table" "route_table_db" {
   vpc_id = var.vpc_id
 
-  #route {
-  #  cidr_block     = "0.0.0.0/0"
-  #  nat_gateway_id = var.nat_gateway_id
-  #}
-
   tags = {
     Name = "Private Route Table"
   }
@@ -51,6 +46,9 @@ resource "aws_security_group" "db_sg" {
     to_port     = 5432
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    security_groups = [
+        var.api_sg_id,
+    ]
   }
 
   egress {

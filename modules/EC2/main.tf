@@ -162,16 +162,16 @@ resource "aws_security_group" "sg_api" {
   vpc_id = var.vpc_id
 
   # http
-    ingress {
-    from_port = 80
-    to_port   = 80
-    protocol  = "tcp"
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port = 8000
-    to_port   = 8000
-    protocol  = "tcp"
+    from_port   = 8000
+    to_port     = 8000
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   # ssh
