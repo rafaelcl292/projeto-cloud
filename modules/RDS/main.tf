@@ -81,7 +81,7 @@ resource "aws_db_instance" "db" {
   backup_retention_period = 7
   backup_window           = "02:00-02:30"
   maintenance_window      = "Mon:03:00-Mon:04:00"
-  # multi_az                = true
+  multi_az                = true
 
   vpc_security_group_ids = [
     aws_security_group.db_sg.id,

@@ -31,7 +31,6 @@ resource "aws_launch_template" "launch_template" {
   name          = "launch_template_ec2"
   image_id      = "ami-0fc5d935ebf8bc3bc"
   instance_type = "t2.micro"
-  key_name      = aws_key_pair.key_ec2.key_name
   user_data = base64encode(<<-EOF
     #!/bin/bash
     sudo apt update
@@ -70,13 +69,6 @@ resource "aws_security_group" "sg_ec2" {
     # security_groups = [var.lb_sg]
     cidr_blocks = ["0.0.0.0/0"]
   }
-  # ssh
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   egress {
     from_port   = 0
@@ -101,11 +93,6 @@ resource "aws_autoscaling_group" "asg_ec2" {
     id      = aws_launch_template.launch_template.id
     version = "$Latest"
   }
-}
-
-resource "aws_key_pair" "key_ec2" {
-  key_name   = "key_ec2"
-  public_key = file("ec2.pem.pub")
 }
 
 resource "aws_cloudwatch_metric_alarm" "alarm_ec2_scale_up" {
@@ -161,23 +148,9 @@ resource "aws_security_group" "sg_api" {
   name   = "sg_api"
   vpc_id = var.vpc_id
 
-  # http
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
   ingress {
     from_port   = 8000
     to_port     = 8000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  # ssh
-  ingress {
-    from_port   = 22
-    to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -193,7 +166,6 @@ resource "aws_security_group" "sg_api" {
 resource "aws_instance" "api" {
   ami                    = "ami-0fc5d935ebf8bc3bc"
   instance_type          = "t2.micro"
-  key_name               = aws_key_pair.key_ec2.key_name
   subnet_id              = aws_subnet.subnet1_ec2.id
   vpc_security_group_ids = [aws_security_group.sg_api.id]
   user_data = base64encode(<<-EOF
