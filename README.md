@@ -19,3 +19,5 @@ terraform init
 ```
 terraform apply --auto-approve
 ```
+
+Para acessar a aplicação basta entrar no link exibido no output, ele se refere ao Load Balancer.
